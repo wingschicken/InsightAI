@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Security Scanner{% endblock %}</title>
+    <style>
+        body {transition: background-color 0.35s ease, color 0.35s ease; margin:0; padding:0; font-family:Arial,sans-serif;}
+        body.dark-mode {background-color:#1a1d23; color:#c9d1d9;}
+        body.light-mode {background-color:#ffffff; color:#111;}
+        .container {max-width:960px; margin:0 auto; padding:24px;}
+        h1,h2 {color:#58a6ff;}
+        body.light-mode h1, body.light-mode h2 {color:#0f4bd8;}
+        form {background:rgba(22,27,34,0.95); padding:24px; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.22);}
+        body.light-mode form {background:#fff; box-shadow:0 10px 30px rgba(0,0,0,0.08);}
+        label {display:block; margin-top:16px; font-weight:600;}
+        input, select, textarea {width:100%; padding:12px; margin-top:8px; border:1px solid #30363d; border-radius:10px; background:#0d1117; color:#c9d1d9;}
+        body.light-mode input, body.light-mode select, body.light-mode textarea {background:#fff; color:#111; border:1px solid #cbd5e1;}
+        button, .button {width:auto; background:#238636; color:#fff; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; margin-top:16px; display:inline-flex; align-items:center; justify-content:center;}
+        button:hover, .button:hover {background:#2ea043;}
+        .button.secondary {background:#0f172a; color:#fff; text-decoration:none;}
+        .button.secondary:hover {background:#1e293b;}
+        .panel {background:#161b22; padding:20px; border-radius:14px; margin-top:20px;}
+        body.light-mode .panel {background:#fff;}
+        a {color:#58a6ff; text-decoration:none;}
+        body.light-mode a {color:#1d4ed8;}
+        .checkbox-group {display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;}
+        .checkbox-group label {display:flex; align-items:center; margin-top:0;}
+        .checkbox-group input {width:auto; margin-right:8px;}
+        pre {background:#0d1117; padding:16px; border-radius:12px; overflow-x:auto; border:1px solid #30363d;}
+        body.light-mode pre {background:#f8fafc; color:#111; border:1px solid #cbd5e1;}
+        .topbar {display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:16px; flex-wrap:wrap; background:#0d1117; padding:16px 24px; border-radius:12px; margin-bottom:24px;}
+        body.light-mode .topbar {background:#e5e7eb;}
+        .topbar a {margin-left:12px; font-weight:600;}
+        .topbar-left, .topbar-right {display:flex; align-items:center; flex-wrap:wrap; gap:12px;}
+        .profile-link {display:flex; align-items:center; gap:10px;}
+        .avatar {width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#238636; color:#fff; font-weight:700;}
+        .avatar-img {width:38px; height:38px; border-radius:50%; object-fit:cover;}
+        body.light-mode .avatar {background:#1d4ed8;}
+        .profile-header {display:flex; gap:18px; align-items:center; margin-bottom:20px;}
+        .avatar-large {width:96px; height:96px; border-radius:50%; background:#238636; display:flex; align-items:center; justify-content:center; color:#fff; font-size:36px;}
+        body.light-mode .avatar-large {background:#1d4ed8;}
+        .profile-image {width:96px; height:96px; border-radius:50%; object-fit:cover;}
+        .status {padding:14px; border-radius:10px; margin-top:12px;}
+        .status.success {background:#164e30; color:#c7f0d7;}
+        body.light-mode .status.success {background:#d1fae5; color:#0f5132;}
+        .status.error {background:#7f1d1d; color:#fecaca;}
+        body.light-mode .status.error {background:#fecaca; color:#7f1d1d;}
+        .ai-analysis {line-height:1.6;}
+        .ai-analysis .risk-low {color:#22c55e;}
+        .ai-analysis .risk-medium {color:#f59e0b;}
+        .ai-analysis .risk-high {color:#ef4444;}
+        .ai-analysis .risk-unknown {color:#6b7280;}
+        .ai-analysis .analysis-text {white-space:pre-wrap; margin:10px 0;}
+        .ai-analysis ul {margin:10px 0; padding-left:20px;}
+        .ai-analysis li {margin:5px 0;}
+    </style>
+</head>
+<body class="{{ theme_class }}">
+    <div class="container">
+        <div class="topbar">
+            <div class="topbar-left">
+                <a href="/">Home</a>
+                <a href="/scan">Scanner</a>
+                <a href="/about">About</a>
+            </div>
+            <div class="topbar-right">
+                {% if user %}
+                    <a class="profile-link" href="/profile">
+                        {% if user.avatar_url %}
+                            <img class="avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                            <div class="avatar">{{ user.display_name[0] if user.display_name else user.username[0] }}</div>
+                        {% endif %}
+                        {{ user.display_name or user.username }}
+                    </a>
+                    <a href="/logout">Logout</a>
+                {% else %}
+                    <a href="/login">Login</a>
+                {% endif %}
+            </div>
+        </div>
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

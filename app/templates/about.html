@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<h1>About the Security Scanner</h1>
+<div class="panel">
+    <p>This container runs a single FastAPI application that performs Nmap network scanning, web header checks, OWASP-style mapping, and AI-powered result analysis.</p>
+    <p>Scans inside Docker may be slower than on your host PC because Docker networking and the container runtime add a bit of overhead. The app uses safer, faster Nmap settings by default to keep scans practical inside the container.</p>
+</div>
+<div class="panel">
+    <h2>How the API works</h2>
+    <p>Use the endpoints below for automated access.</p>
+    <pre>GET /ping
+POST /api/scan</pre>
+    <p>The scan endpoint expects JSON like:</p>
+    <pre>{
+  "target": "example.com",
+  "profile": "basic",
+  "web_scan": true
+}</pre>
+    <p>And returns structured JSON with network findings, web checks, OWASP mapping, and AI analysis.</p>
+</div>
+{% endblock %}

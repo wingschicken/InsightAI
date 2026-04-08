@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Scan Result Detail{% endblock %}
+{% block content %}
+<h1>Scan Result Detail</h1>
+<div class="panel">
+    <a class="button secondary" href="/history">Back to History</a>
+    <h2>{{ scan.target }}</h2>
+    <p><strong>Profile:</strong> {{ scan.profile.replace('_', ' ').title() }}</p>
+    <p><strong>Web scan:</strong> {{ 'Yes' if scan.web_scan else 'No' }}</p>
+    <p><strong>AI analysis:</strong> {{ 'Yes' if scan.use_ai else 'No' }}</p>
+    <p><strong>Scanned:</strong> {{ scan.created_at.strftime('%Y-%m-%d %H:%M:%S') if scan.created_at else 'n/a' }}</p>
+</div>
+<div class="panel">
+    <h3>Network scan</h3>
+    <pre>{{ result.network_scan | tojson(indent=2) }}</pre>
+    <h3>Web checks</h3>
+    <pre>{{ result.web_checks | tojson(indent=2) }}</pre>
+    <h3>OWASP Mapping</h3>
+    <pre>{{ result.owasp_mapping | tojson(indent=2) }}</pre>
+    {% if result.ai_analysis %}
+    <h3>AI Analysis</h3>
+    <div class="ai-analysis">
+        <p><strong>Risk Level:</strong> <span class="risk-{{ result.ai_analysis.risk_level | lower }}">{{ result.ai_analysis.risk_level | title }}</span></p>
+        <p><strong>Analysis:</strong></p>
+        <p class="analysis-text">{{ result.ai_analysis.analysis | replace('\n', '<br>') | safe }}</p>
+        {% if result.ai_analysis.recommendations %}
+        <p><strong>Recommendations:</strong></p>
+        <ul>
+            {% for rec in result.ai_analysis.recommendations %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

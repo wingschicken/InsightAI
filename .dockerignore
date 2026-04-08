@@ -1,0 +1,13 @@
+orchestrator/
+ai_service/
+mix_service/
+.git
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/

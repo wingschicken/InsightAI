@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<h1>Security Scanner</h1>
+<div class="panel">
+    {% if error %}<p style="color:#ffa198;">{{ error }}</p>{% endif %}
+    <form method="post" id="scan-form">
+        <label for="target">Target (domain or IP)</label>
+        <input type="text" id="target" name="target" required value="{{ target or '' }}">
+
+        <label for="profile">Profile</label>
+        <select id="profile" name="profile">
+            <option value="fast_recon" {% if profile == 'fast_recon' %}selected{% endif %}>Fast Recon</option>
+            <option value="basic" {% if profile == 'basic' %}selected{% endif %}>Basic</option>
+            <option value="top_ports" {% if profile == 'top_ports' %}selected{% endif %}>Top Ports</option>
+            <option value="service" {% if profile == 'service' %}selected{% endif %}>Service</option>
+            <option value="full" {% if profile == 'full' %}selected{% endif %}>Full</option>
+        </select>
+
+        <div class="checkbox-group">
+            <label><input type="checkbox" name="web_scan" {% if web_scan %}checked{% endif %}> Web scan checks</label>
+            <label><input type="checkbox" name="use_ai" {% if use_ai %}checked{% endif %}> Use AI analysis</label>
+        </div>
+
+        <div class="button-row">
+            <button type="submit" id="scan-button">Run Scan</button>
+            <span id="scan-spinner" class="spinner hidden" title="Scanning"></span>
+            <a class="button secondary" href="/history">View History</a>
+        </div>
+    </form>
+</div>
+<style>
+    .button-row {display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:8px;}
+    .button.secondary {background:#0f172a; color:#fff; text-decoration:none; padding:12px 20px; border-radius:10px; display:inline-flex; align-items:center;}
+    .button.secondary:hover {background:#1e293b;}
+    .spinner {width:20px; height:20px; border:3px solid rgba(255,255,255,0.3); border-top-color:#58a6ff; border-radius:50%; animation:spin 1s linear infinite; display:inline-block;}
+    .hidden {display:none;}
+    @keyframes spin {to {transform:rotate(360deg);}}
+</style>
+<script>
+    const scanForm = document.getElementById('scan-form');
+    const scanButton = document.getElementById('scan-button');
+    const scanSpinner = document.getElementById('scan-spinner');
+    scanForm?.addEventListener('submit', () => {
+        scanButton.disabled = true;
+        scanButton.textContent = 'Scanning…';
+        scanSpinner.classList.remove('hidden');
+    });
+</script>
+{% if result %}
+<div class="panel">
+    <h2>Scan Results for {{ result.target }}</h2>
+    <h3>Network scan</h3>
+    <pre>{{ result.network_scan | tojson(indent=2) }}</pre>
+    <h3>Web checks</h3>
+    <pre>{{ result.web_checks | tojson(indent=2) }}</pre>
+    <h3>OWASP Mapping</h3>
+    <pre>{{ result.owasp_mapping | tojson(indent=2) }}</pre>
+    {% if result.ai_analysis %}
+    <h3>AI Analysis</h3>
+    <div class="ai-analysis">
+        <p><strong>Risk Level:</strong> <span class="risk-{{ result.ai_analysis.risk_level | lower }}">{{ result.ai_analysis.risk_level | title }}</span></p>
+        <p><strong>Analysis:</strong></p>
+        <p class="analysis-text">{{ result.ai_analysis.analysis | replace('\n', '<br>') | safe }}</p>
+        {% if result.ai_analysis.recommendations %}
+        <p><strong>Recommendations:</strong></p>
+        <ul>
+            {% for rec in result.ai_analysis.recommendations %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

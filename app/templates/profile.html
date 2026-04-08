@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1>Profile Settings</h1>
+<div class="panel">
+    {% if error %}
+        <div class="status success">{{ error }}</div>
+    {% endif %}
+    <div class="profile-header">
+        {% if user.avatar_url %}
+            <img class="profile-image" src="{{ user.avatar_url }}" alt="Profile image">
+        {% else %}
+            <div class="avatar-large">{{ user.display_name[0] if user.display_name else user.username[0] }}</div>
+        {% endif %}
+        <div>
+            <h2>{{ user.display_name or user.username }}</h2>
+            <p>{{ user.email or 'No email set' }}</p>
+        </div>
+    </div>
+    <form method="post">
+        <label for="display_name">Display Name</label>
+        <input type="text" id="display_name" name="display_name" value="{{ user.display_name or '' }}">
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" value="{{ user.email or '' }}">
+
+        <label for="avatar_url">Profile Picture URL</label>
+        <input type="url" id="avatar_url" name="avatar_url" value="{{ user.avatar_url or '' }}" placeholder="https://example.com/avatar.png">
+
+        <label for="theme">Theme</label>
+        <select id="theme" name="theme">
+            <option value="dark" {% if user.theme == 'dark' %}selected{% endif %}>Dark Mode</option>
+            <option value="light" {% if user.theme == 'light' %}selected{% endif %}>Light Mode</option>
+        </select>
+
+        <label for="preferred_profile">Default Scan Profile</label>
+        <select id="preferred_profile" name="preferred_profile">
+            {% for option in profile_options %}
+                <option value="{{ option }}" {% if user.preferred_profile == option %}selected{% endif %}>{{ option.replace('_', ' ').title() }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="checkbox-group">
+            <label><input type="checkbox" name="default_use_ai" {% if user.default_use_ai %}checked{% endif %}> Use AI analysis by default</label>
+        </div>
+
+        <button type="submit">Save Preferences</button>
+    </form>
+</div>
+{% endblock %}

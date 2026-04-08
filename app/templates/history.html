@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Scan History{% endblock %}
+{% block content %}
+<h1>Scan History</h1>
+<div class="panel">
+    {% if scans %}
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="text-align:left; border-bottom:1px solid rgba(148,163,184,0.35);">
+                    <th style="padding:12px 8px;">When</th>
+                    <th style="padding:12px 8px;">Target</th>
+                    <th style="padding:12px 8px;">Profile</th>
+                    <th style="padding:12px 8px;">Web Scan</th>
+                    <th style="padding:12px 8px;">AI</th>
+                    <th style="padding:12px 8px;">View</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr style="border-bottom:1px solid rgba(148,163,184,0.15);">
+                    <td style="padding:12px 8px;">{{ scan.created_at.strftime('%Y-%m-%d %H:%M:%S') if scan.created_at else 'n/a' }}</td>
+                    <td style="padding:12px 8px;">{{ scan.target }}</td>
+                    <td style="padding:12px 8px;">{{ scan.profile.replace('_',' ').title() }}</td>
+                    <td style="padding:12px 8px;">{{ 'Yes' if scan.web_scan else 'No' }}</td>
+                    <td style="padding:12px 8px;">{{ 'Yes' if scan.use_ai else 'No' }}</td>
+                    <td style="padding:12px 8px;"><a class="button secondary" href="/history/{{ scan.id }}">Details</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No scan history yet. Run a scan to save the first report.</p>
+    {% endif %}
+</div>
+{% endblock %}
