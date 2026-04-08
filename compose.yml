@@ -5,6 +5,7 @@ services:
       - "8000"
     environment:
       PORT: 8000
+      DATABASE_URL: sqlite:////tmp/app.db
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       MODEL: ${MODEL}
