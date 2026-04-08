@@ -49,13 +49,26 @@
 </script>
 {% if result %}
 <div class="panel">
-    <h2>Scan Results for {{ result.target }}</h2>
-    <h3>Network scan</h3>
-    <pre>{{ result.network_scan | tojson(indent=2) }}</pre>
-    <h3>Web checks</h3>
-    <pre>{{ result.web_checks | tojson(indent=2) }}</pre>
-    <h3>OWASP Mapping</h3>
-    <pre>{{ result.owasp_mapping | tojson(indent=2) }}</pre>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Scan Results for {{ result.target }}</h2>
+        {% if duration %}<p style="font-size:14px; color:#888; margin:0;"><strong>Duration:</strong> {{ duration }}s</p>{% endif %}
+    </div>
+    
+    <details>
+        <summary>Network Scan</summary>
+        <pre>{{ result.network_scan | tojson(indent=2) }}</pre>
+    </details>
+    
+    <details>
+        <summary>Web Checks</summary>
+        <pre>{{ result.web_checks | tojson(indent=2) }}</pre>
+    </details>
+    
+    <details>
+        <summary>OWASP Mapping</summary>
+        <pre>{{ result.owasp_mapping | tojson(indent=2) }}</pre>
+    </details>
+    
     {% if result.ai_analysis %}
     <h3>AI Analysis</h3>
     <div class="ai-analysis">

@@ -31,6 +31,7 @@ class ScanHistory(Base):
     web_scan = Column(Boolean, nullable=False, default=True)
     use_ai = Column(Boolean, nullable=False, default=True)
     result = Column(String, nullable=False)
+    duration = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     user = relationship('User', back_populates='scans')
@@ -57,6 +58,13 @@ def ensure_columns():
             conn.execute(text("ALTER TABLE users ADD COLUMN preferred_profile VARCHAR DEFAULT 'basic'"))
         if 'default_use_ai' not in existing:
             conn.execute(text("ALTER TABLE users ADD COLUMN default_use_ai BOOLEAN DEFAULT 1"))
+    
+    if 'scan_history' in inspector.get_table_names():
+        scan_history_cols = [col['name'] for col in inspector.get_columns('scan_history')]
+        with engine.connect() as conn:
+            if 'duration' not in scan_history_cols:
+                conn.execute(text("ALTER TABLE scan_history ADD COLUMN duration INTEGER DEFAULT 0"))
+                conn.commit()
 
 def create_admin_user():
     session = SessionLocal()

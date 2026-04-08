@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request, Form, Depends, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -148,6 +149,8 @@ def scan_submit(
             'profile_options': PROFILE_OPTIONS,
         }, user=user)
 
+    start_time = time.time()
+    
     nmap_result = run_nmap(target, profile)
     web_checks = {'performed': False, 'findings': [], 'urls': []}
     owasp_mapping = []
@@ -165,6 +168,8 @@ def scan_submit(
     }
 
     ai_analysis = analyze_scan_result(scan_report) if use_ai else {}
+    
+    duration = int(time.time() - start_time)
 
     result = {
         'target': target,
@@ -180,7 +185,8 @@ def scan_submit(
         profile=profile,
         web_scan=bool(web_scan),
         use_ai=bool(use_ai),
-        result=json.dumps(result)
+        result=json.dumps(result),
+        duration=duration
     )
     db.add(history_item)
     db.commit()
@@ -191,6 +197,7 @@ def scan_submit(
         'web_scan': bool(web_scan),
         'use_ai': bool(use_ai),
         'result': result,
+        'duration': duration,
         'error': None,
         'profile_options': PROFILE_OPTIONS,
     }, user=user)
@@ -244,8 +251,19 @@ def history_page(request: Request, user: User | None = Depends(get_current_user)
         return RedirectResponse('/login')
 
     scans = db.query(ScanHistory).filter(ScanHistory.user_id == user.id).order_by(ScanHistory.created_at.desc()).all()
+    
+    scans_with_risk = []
+    for scan in scans:
+        try:
+            result = json.loads(scan.result)
+            risk_level = result.get('ai_analysis', {}).get('risk_level', 'unknown')
+        except:
+            risk_level = 'unknown'
+        scan.risk_level = risk_level
+        scans_with_risk.append(scan)
+    
     return render_template(request, 'history.html', {
-        'scans': scans,
+        'scans': scans_with_risk,
     }, user=user)
 
 

@@ -12,6 +12,8 @@
                     <th style="padding:12px 8px;">Profile</th>
                     <th style="padding:12px 8px;">Web Scan</th>
                     <th style="padding:12px 8px;">AI</th>
+                    <th style="padding:12px 8px;">Risk Level</th>
+                    <th style="padding:12px 8px;">Duration</th>
                     <th style="padding:12px 8px;">View</th>
                 </tr>
             </thead>
@@ -23,6 +25,8 @@
                     <td style="padding:12px 8px;">{{ scan.profile.replace('_',' ').title() }}</td>
                     <td style="padding:12px 8px;">{{ 'Yes' if scan.web_scan else 'No' }}</td>
                     <td style="padding:12px 8px;">{{ 'Yes' if scan.use_ai else 'No' }}</td>
+                    <td style="padding:12px 8px;"><span class="risk-{{ scan.risk_level | lower }}">{{ scan.risk_level | title }}</span></td>
+                    <td style="padding:12px 8px;">{{ scan.duration }}s</td>
                     <td style="padding:12px 8px;"><a class="button secondary" href="/history/{{ scan.id }}">Details</a></td>
                 </tr>
                 {% endfor %}

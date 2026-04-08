@@ -8,15 +8,25 @@
     <p><strong>Profile:</strong> {{ scan.profile.replace('_', ' ').title() }}</p>
     <p><strong>Web scan:</strong> {{ 'Yes' if scan.web_scan else 'No' }}</p>
     <p><strong>AI analysis:</strong> {{ 'Yes' if scan.use_ai else 'No' }}</p>
+    <p><strong>Duration:</strong> {{ scan.duration }}s</p>
     <p><strong>Scanned:</strong> {{ scan.created_at.strftime('%Y-%m-%d %H:%M:%S') if scan.created_at else 'n/a' }}</p>
 </div>
 <div class="panel">
-    <h3>Network scan</h3>
-    <pre>{{ result.network_scan | tojson(indent=2) }}</pre>
-    <h3>Web checks</h3>
-    <pre>{{ result.web_checks | tojson(indent=2) }}</pre>
-    <h3>OWASP Mapping</h3>
-    <pre>{{ result.owasp_mapping | tojson(indent=2) }}</pre>
+    <details>
+        <summary>Network Scan</summary>
+        <pre>{{ result.network_scan | tojson(indent=2) }}</pre>
+    </details>
+    
+    <details>
+        <summary>Web Checks</summary>
+        <pre>{{ result.web_checks | tojson(indent=2) }}</pre>
+    </details>
+    
+    <details>
+        <summary>OWASP Mapping</summary>
+        <pre>{{ result.owasp_mapping | tojson(indent=2) }}</pre>
+    </details>
+    
     {% if result.ai_analysis %}
     <h3>AI Analysis</h3>
     <div class="ai-analysis">
