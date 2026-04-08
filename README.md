@@ -232,9 +232,7 @@ print(response.json())
 - `PORT` in `.env` or system environment is used by Docker and Uvicorn.
 - Update passwords and API keys before production use.
 
-## License
 
-Add license information here.
 
 ## Contributing
 
