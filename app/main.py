@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import uvicorn
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request, Form, Depends, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -335,3 +336,9 @@ def scan_api(request: ScanRequest):
 @app.get('/favicon.ico')
 def favicon():
     return Response(status_code=204)
+
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8000"))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port)
