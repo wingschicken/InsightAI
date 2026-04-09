@@ -17,7 +17,7 @@ from app.ai_client import analyze_scan_result
 app = FastAPI()
 templates = Jinja2Templates(directory='app/templates')
 
-PROFILE_OPTIONS = ['fast_recon', 'basic', 'top_ports', 'service', 'full']
+PROFILE_OPTIONS = ['fast_recon', 'basic', 'top_ports', 'service', 'full','nonadmin']
 
 
 def get_db():
