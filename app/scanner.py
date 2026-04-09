@@ -7,7 +7,8 @@ PROFILE_ARGS = {
     'basic': ['-sV'],
     'top_ports': ['--top-ports', '100', '-sV'],
     'service': ['-sV'],
-    'full': ['-sV', '-p-']
+    'full': ['-sV', '-p-'],
+    'nonadmin': ["-sT"]
 }
 
 DEFAULT_NMAP_OPTIONS = ['-oX', '-', '-Pn', '-T3', '--max-retries', '1', '--host-timeout', '30s', '--min-parallelism', '10']
