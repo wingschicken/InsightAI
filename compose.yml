@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   app:
     build: .
@@ -14,7 +12,6 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-nimda123}
     depends_on:
       - db
-    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
@@ -22,4 +19,3 @@ services:
       POSTGRES_USER: scanuser
       POSTGRES_PASSWORD: scanpass
       POSTGRES_DB: scandb
-    restart: unless-stopped
