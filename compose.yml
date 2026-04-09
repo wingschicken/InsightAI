@@ -2,9 +2,9 @@ version: "3.9"
 
 services:
   app:
-    build: ./app
+    build: .
     ports:
-      - "8000:8000"
+      - "8000"
     environment:
       PORT: ${PORT:-8000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://scanuser:scanpass@db:5432/scandb}
@@ -13,8 +13,8 @@ services:
       MODEL: ${MODEL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-nimda123}
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
@@ -22,9 +22,4 @@ services:
       POSTGRES_USER: scanuser
       POSTGRES_PASSWORD: scanpass
       POSTGRES_DB: scandb
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scanuser"]
-      interval: 5s
-      retries: 5
+    restart: unless-stopped
