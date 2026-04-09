@@ -22,14 +22,9 @@ services:
       POSTGRES_USER: scanuser
       POSTGRES_PASSWORD: scanpass
       POSTGRES_DB: scandb
-    volumes:
-      - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U scanuser"]
       interval: 5s
       retries: 5
-
-volumes:
-  db_data:
