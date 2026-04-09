@@ -1,11 +1,34 @@
+version: "3.9"
+
 services:
   app:
-    build: .
+    build: ./app
     ports:
-      - "8000"
+      - "8000:8000"
     environment:
       PORT: 8000
-      DATABASE_URL: sqlite:////tmp/app.db
+      DATABASE_URL: postgresql://scanuser:scanpass@db:5432/scandb
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       MODEL: ${MODEL}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: scanuser
+      POSTGRES_PASSWORD: scanpass
+      POSTGRES_DB: scandb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scanuser"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  db_data:
