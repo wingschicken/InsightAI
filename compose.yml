@@ -1,21 +1,11 @@
 services:
   app:
-    build: .
+    build: ./app
     ports:
-      - "8000"
+      - ${PORT}:${PORT}
     environment:
-      PORT: ${PORT:-8000}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://scanuser:scanpass@db:5432/scandb}
+      PORT: ${PORT}
+      DATABASE_URL:  ${DATABASE_URL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       MODEL: ${MODEL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-nimda123}
-    depends_on:
-      - db
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: scanuser
-      POSTGRES_PASSWORD: scanpass
-      POSTGRES_DB: scandb

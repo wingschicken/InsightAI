@@ -9,13 +9,13 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash, check_password_hash
 from pydantic import BaseModel
-from app.models import SessionLocal, User, ScanHistory
-from app.scanner import run_nmap
-from app.web_checks import discover_web_targets, run_web_checks, build_owasp_mapping
-from app.ai_client import analyze_scan_result
+from models import SessionLocal, User, ScanHistory
+from scanner import run_nmap
+from web_checks import discover_web_targets, run_web_checks, build_owasp_mapping
+from ai_client import analyze_scan_result
 
 app = FastAPI()
-templates = Jinja2Templates(directory='app/templates')
+templates = Jinja2Templates(directory='templates')
 
 PROFILE_OPTIONS = ['fast_recon', 'basic', 'top_ports', 'service', 'full','nonadmin']
 
@@ -224,6 +224,10 @@ def profile_update(
     theme: str = Form('dark'),
     preferred_profile: str = Form('basic'),
     default_use_ai: str | None = Form(None),
+    flashlight_effect: str | None = Form(None),
+    flashlight_radius: int = Form(150),
+    flashlight_color: str = Form('#ffff00'),
+    flashlight_darkness: int = Form(80),
     user: User | None = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -236,6 +240,16 @@ def profile_update(
     user.theme = theme if theme in ['light', 'dark'] else 'dark'
     user.preferred_profile = preferred_profile if preferred_profile in PROFILE_OPTIONS else 'basic'
     user.default_use_ai = bool(default_use_ai)
+    user.flashlight_effect = flashlight_effect == 'true'
+    user.flashlight_radius = max(50, min(400, flashlight_radius))  # Clamp between 50-400
+    user.flashlight_darkness = max(0, min(100, flashlight_darkness))  # Clamp between 0-100
+    
+    # Validate hex color format
+    import re
+    if re.match(r'^#[0-9a-fA-F]{6}$', flashlight_color):
+        user.flashlight_color = flashlight_color
+    else:
+        user.flashlight_color = '#ffff00'  # Default to yellow if invalid
 
     db.add(user)
     db.commit()
@@ -341,4 +355,4 @@ def favicon():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
-    uvicorn.run("app.main:app", host="0.0.0.0", port=port)
+    uvicorn.run("main:app", host="0.0.0.0", port=port)

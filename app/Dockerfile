@@ -13,4 +13,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["python", "-m", "app.main"]
+CMD ["python", "main.py"]

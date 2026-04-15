@@ -23,6 +23,10 @@ class User(Base):
     theme = Column(String, nullable=False, default='dark')
     preferred_profile = Column(String, nullable=False, default='basic')
     default_use_ai = Column(Boolean, nullable=False, default=True)
+    flashlight_effect = Column(Boolean, nullable=False, default=False)
+    flashlight_radius = Column(Integer, nullable=False, default=150)
+    flashlight_color = Column(String, nullable=False, default='#ffff00')
+    flashlight_darkness = Column(Integer, nullable=False, default=80)
     scans = relationship('ScanHistory', back_populates='user', cascade='all, delete-orphan')
 
 
