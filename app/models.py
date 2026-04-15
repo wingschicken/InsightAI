@@ -4,7 +4,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash
 import os
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:////tmp/app.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:////data/app.db")
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
