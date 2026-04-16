@@ -2,6 +2,7 @@ import json
 import os
 import logging
 import requests
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
@@ -16,15 +17,6 @@ QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 MODEL = os.getenv("MODEL", "gemma3:27b")
-
-app = FastAPI()
-
-class AskRequest(BaseModel):
-    question: str
-
-class AskResponse(BaseModel):
-    answer: str
-    sources: list
 
 qdrant_client = None
 
@@ -98,9 +90,7 @@ def ingest_data():
     )
     logger.info(f"Ingested {len(points)} records")
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize Qdrant and ingest data if needed."""
+async def startup():
     global qdrant_client
     
     qdrant_client = QdrantClient(url=QDRANT_URL)
@@ -124,6 +114,20 @@ async def startup_event():
         )
         
         ingest_data()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await startup()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+class AskRequest(BaseModel):
+    question: str
+
+class AskResponse(BaseModel):
+    answer: str
+    sources: list
 
 @app.get("/")
 async def health():
