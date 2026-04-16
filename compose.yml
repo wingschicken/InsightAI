@@ -2,9 +2,9 @@ services:
   app:
     build: ./app
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:${APP_PORT:-8000}"
     environment:
-      PORT: 8000
+      PORT: ${APP_PORT:-8000}
       DATABASE_URL: ${DATABASE_URL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
@@ -13,9 +13,9 @@ services:
   rag:
     build: ./rag
     ports:
-      - "8080:8080"
+      - "${RAG_PORT:-8080}:${RAG_PORT:-8080}"
     environment:
-      PORT: 8080
+      PORT: ${RAG_PORT:-8080}
       DATABASE_URL: ${DATABASE_URL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
