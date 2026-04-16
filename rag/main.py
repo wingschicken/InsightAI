@@ -8,21 +8,17 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 import uvicorn
 
-# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Environment variables
 PORT = int(os.getenv("PORT", 8080))
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 MODEL = os.getenv("MODEL", "gemma3:27b")
 
-# FastAPI app
 app = FastAPI()
 
-# Pydantic models
 class AskRequest(BaseModel):
     question: str
 
@@ -30,7 +26,6 @@ class AskResponse(BaseModel):
     answer: str
     sources: list
 
-# Global Qdrant client
 qdrant_client = None
 
 def get_embeddings(texts):
@@ -76,18 +71,15 @@ def ingest_data():
         service = item["service"]
         vulnerabilities = item.get("vulnerabilities", [])
         
-        # Convert to text
         vuln_text = ", ".join(vulnerabilities)
         text = f"Port {port} ({service}): vulnerabilities: {vuln_text}"
         
-        # Get embedding
         try:
             embedding = get_embeddings(text)
         except Exception as e:
             logger.error(f"Error getting embedding for port {port}: {e}")
             continue
         
-        # Create point
         point = PointStruct(
             id=idx,
             vector=embedding,
@@ -100,7 +92,6 @@ def ingest_data():
         )
         points.append(point)
     
-    # Upload to Qdrant
     qdrant_client.upsert(
         collection_name="ports",
         points=points
@@ -112,16 +103,13 @@ async def startup_event():
     """Initialize Qdrant and ingest data if needed."""
     global qdrant_client
     
-    # Connect to Qdrant
     qdrant_client = QdrantClient(url=QDRANT_URL)
     logger.info(f"Connected to Qdrant at {QDRANT_URL}")
     
-    # Check if collection exists
     try:
         collection_info = qdrant_client.get_collection("ports")
         logger.info(f"Collection 'ports' exists with {collection_info.points_count} points")
         
-        # Check if empty
         if collection_info.points_count == 0:
             logger.info("Collection is empty, ingesting data...")
             ingest_data()
@@ -130,13 +118,11 @@ async def startup_event():
     except Exception as e:
         logger.info(f"Collection 'ports' does not exist, creating and ingesting...")
         
-        # Create collection
         qdrant_client.create_collection(
             collection_name="ports",
             vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
         )
         
-        # Ingest data
         ingest_data()
 
 @app.get("/")
@@ -148,17 +134,14 @@ async def health():
 async def ask(request: AskRequest):
     """Answer a question using RAG."""
     try:
-        # Embed question
         question_embedding = get_embeddings(request.question)
         
-        # Search Qdrant
         search_results = qdrant_client.search(
             collection_name="ports",
             query_vector=question_embedding,
             limit=3
         )
         
-        # Build context
         context = ""
         sources = []
         for result in search_results:
@@ -169,7 +152,6 @@ async def ask(request: AskRequest):
                 "service": payload["service"]
             })
         
-        # Get answer from LLM
         answer = get_answer_from_llm(context, request.question)
         
         return AskResponse(answer=answer, sources=sources)
