@@ -14,6 +14,16 @@
     body.light-mode .chat-list-item.active {background:#238636; color:#fff;}
     .new-chat-btn {width:100%; padding:10px; background:#238636; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:12px; font-weight:500; transition:all 0.2s ease;}
     .new-chat-btn:hover {background:#2ea043;}
+    .rag-toggle-row {display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px;}
+    .rag-toggle-row label {font-size:13px; color:#c9d1d9; display:flex; align-items:center; gap:10px;}
+    .rag-toggle-row button {flex:1; padding:10px; background:#0b5d70; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:all 0.2s ease;}
+    .rag-toggle-row button:hover {background:#0e7e9e;}
+    .switch {position:relative; display:inline-block; width:44px; height:24px;}
+    .switch input {opacity:0; width:0; height:0;}
+    .slider {position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#444c56; transition:.4s; border-radius:24px;}
+    .slider:before {position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:white; transition:.4s; border-radius:50%;}
+    input:checked + .slider {background:#238636;}
+    input:checked + .slider:before {transform:translateX(20px);}
     .chat-container {background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:16px; margin:0; height:100%; display:flex; flex-direction:column; overflow:hidden;}
     body.light-mode .chat-container {background:#f6f8fa; border:1px solid #d0d7de;}
     #messages {display:flex; flex-direction:column; gap:8px; flex:1; overflow-y:auto; margin-bottom:16px;}
@@ -47,6 +57,16 @@
 <div class="chat-wrapper">
     <div class="chat-sidebar">
         <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
+        <div class="rag-toggle-row">
+            <label>
+                <span>RAG mode</span>
+                <span class="switch">
+                    <input type="checkbox" id="rag-toggle">
+                    <span class="slider"></span>
+                </span>
+            </label>
+            <button id="rag-ingest-btn" onclick="runRagIngest()" style="display:none;">Update RAG DB</button>
+        </div>
         <ul class="chat-list" id="chat-list">
             {% for chat in chats %}
                 <li class="chat-list-item" onclick="loadChat({{ chat.id }})" data-chat-id="{{ chat.id }}">{{ chat.title }}</li>
@@ -135,14 +155,29 @@
         return html;
     }
     
+    let ragMode = false;
+    const ragToggle = document.getElementById('rag-toggle');
+    const ragIngestBtn = document.getElementById('rag-ingest-btn');
+
+    ragToggle.addEventListener('change', () => {
+        ragMode = ragToggle.checked;
+        ragIngestBtn.style.display = ragMode ? 'block' : 'none';
+    });
+
     async function createNewChat() {
         try {
             const response = await fetch('/api/chats/new', { method: 'POST' });
             const data = await response.json();
             
             if (data.id) {
+                const chatList = document.getElementById('chat-list');
+                const chatItem = document.createElement('li');
+                chatItem.className = 'chat-list-item';
+                chatItem.dataset.chatId = data.id;
+                chatItem.textContent = data.title || 'New Chat';
+                chatItem.onclick = () => loadChat(data.id);
+                chatList.appendChild(chatItem);
                 loadChat(data.id);
-                location.reload();
             }
         } catch (error) {
             alert('Error creating chat: ' + error.message);
@@ -219,7 +254,8 @@
             const formData = new FormData();
             formData.append('message', message);
             
-            const response = await fetch(`/api/chats/${currentChatId}/message`, {
+            const endpoint = ragMode ? `/api/rag_chat/${currentChatId}` : `/api/chats/${currentChatId}/message`;
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 body: formData
             });
@@ -252,6 +288,25 @@
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
     
+    async function runRagIngest() {
+        if (!confirm('This will update the RAG database. Continue?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/rag/ingest', { method: 'POST' });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.detail || 'RAG ingest failed');
+            }
+            const data = await response.json();
+            alert('RAG database update completed successfully.');
+            console.log('RAG ingest response:', data);
+        } catch (error) {
+            alert('Failed to update RAG DB: ' + error.message);
+        }
+    }
+
     // Auto-resize textarea
     messageInput.addEventListener('input', function() {
         this.style.height = 'auto';

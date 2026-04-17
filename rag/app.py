@@ -9,6 +9,7 @@ import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import uvicorn
 
 import re
 load_dotenv()
@@ -20,15 +21,17 @@ CHAT_MODEL = os.getenv("CHAT_MODEL", "gemma3:27b")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "bge-m3")
 
 KNOWLEDGE_FILE = os.getenv("KNOWLEDGE_FILE", "knowledge.md")
-CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_data")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "vuln_knowledge")
+
+CHROMA_HOST = os.getenv("CHROMA_HOST", "ragbase")
+CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
 
 if not OPENAI_API_KEY or not OPENAI_BASE_URL:
     raise RuntimeError("Missing OPENAI_API_KEY or OPENAI_BASE_URL")
 
 app = FastAPI(title="Simple RAG Starter")
 
-client = chromadb.PersistentClient(path=CHROMA_PATH)
+client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
 
@@ -82,7 +85,7 @@ def clean_markdown(text: str) -> str:
     return text.strip()
 
 async def embed_texts(texts: List[str]) -> List[List[float]]:
-    url = f"{OPENAI_BASE_URL}/v1/embeddings"
+    url = f"{OPENAI_BASE_URL}/embeddings"
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json",
@@ -103,7 +106,7 @@ async def embed_texts(texts: List[str]) -> List[List[float]]:
 
 
 async def chat_completion(prompt: str) -> str:
-    url = f"{OPENAI_BASE_URL}/v1/chat/completions"
+    url = f"{OPENAI_BASE_URL}/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json",
@@ -156,6 +159,9 @@ def build_prompt(query: str, docs: List[Dict[str, Any]]) -> str:
 async def ping() -> Dict[str, str]:
     return {"status": "ok"}
 
+@app.get("/")
+async def root() -> Dict[str, str]:
+    return {"status": "ok", "service": "rag"}
 
 @app.post("/ingest-file", response_model=IngestResponse)
 async def ingest_file() -> IngestResponse:
@@ -251,3 +257,8 @@ async def chat(req: ChatRequest) -> ChatResponse:
     answer = await chat_completion(prompt)
 
     return ChatResponse(answer=answer, context=context)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8001"))
+    uvicorn.run("app:app", host="0.0.0.0", port=port)

@@ -3,6 +3,7 @@ import os
 import time
 import uvicorn
 import psutil
+import requests
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request, Form, Depends, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -493,6 +494,63 @@ def chat_api(message: str = Form(...), user: User | None = Depends(get_current_u
         return {'response': ai_response}
     except Exception as e:
         return {'response': f'Error: {str(e)}'}
+
+
+def ask_rag(question: str, top_k: int = 4):
+    response = requests.post(
+        "http://rag:8001/chat",
+        json={"query": question, "top_k": top_k},
+        timeout=60
+    )
+    response.raise_for_status()
+    return response.json()
+
+@app.post('/api/rag_chat/{chat_id}')
+def rag_chat(
+    chat_id: int,
+    message: str = Form(...),
+    user: User | None = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    if not message or not message.strip():
+        raise HTTPException(status_code=400, detail='Message is required')
+
+    chat = db.query(Chat).filter(Chat.id == chat_id, Chat.user_id == user.id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail='Chat not found')
+
+    user_msg = ChatMessage(chat_id=chat.id, role='user', content=message)
+    db.add(user_msg)
+    db.commit()
+
+    try:
+        rag_result = ask_rag(message, top_k=4)
+        ai_response = rag_result.get('answer') if isinstance(rag_result, dict) else None
+        if not ai_response:
+            ai_response = rag_result.get('response') if isinstance(rag_result, dict) else str(rag_result)
+    except Exception as e:
+        ai_response = f'Error: {str(e)}'
+
+    ai_msg = ChatMessage(chat_id=chat.id, role='assistant', content=ai_response)
+    db.add(ai_msg)
+    db.commit()
+
+    return {'response': ai_response}
+
+
+@app.post('/api/rag/ingest')
+def rag_ingest(user: User | None = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+
+    try:
+        response = requests.post('http://rag:8001/ingest-file', timeout=180)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get('/status', response_class=HTMLResponse)
