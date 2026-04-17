@@ -2,9 +2,9 @@ services:
   app:
     build: ./app
     ports:
-      - "${PORT:-8000}:${PORT:-8000}"
+      - "8000:8000"
     environment:
-      PORT: ${PORT:-8000}
+      PORT: 8000
       DATABASE_URL: ${DATABASE_URL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
