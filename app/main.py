@@ -2,6 +2,7 @@ import json
 import os
 import time
 import uvicorn
+import psutil
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request, Form, Depends, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash, check_password_hash
 from pydantic import BaseModel
-from models import SessionLocal, User, ScanHistory
+from models import SessionLocal, User, ScanHistory, Chat, ChatMessage
 from scanner import run_nmap
 from web_checks import discover_web_targets, run_web_checks, build_owasp_mapping
 from ai_client import analyze_scan_result
@@ -17,7 +18,7 @@ from ai_client import analyze_scan_result
 app = FastAPI()
 templates = Jinja2Templates(directory='templates')
 
-PROFILE_OPTIONS = ['fast_recon', 'basic', 'top_ports', 'service', 'full','nonadmin']
+PROFILE_OPTIONS = ['nonadmin']
 
 
 def get_db():
@@ -309,6 +310,233 @@ class ScanRequest(BaseModel):
     target: str
     profile: str = 'basic'
     web_scan: bool = True
+
+
+@app.get('/chat', response_class=HTMLResponse)
+def chat_page(request: Request, user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        return RedirectResponse('/login')
+    
+    # Get all chats for this user
+    chats = db.query(Chat).filter(Chat.user_id == user.id).order_by(Chat.updated_at.desc()).all()
+    
+    return render_template(request, 'chat.html', {'chats': chats}, user=user)
+
+
+@app.post('/api/chats/new')
+def create_new_chat(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    new_chat = Chat(user_id=user.id, title='New Chat')
+    db.add(new_chat)
+    db.commit()
+    db.refresh(new_chat)
+    
+    return {'id': new_chat.id, 'title': new_chat.title}
+
+
+@app.get('/api/chats')
+def get_chats(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    chats = db.query(Chat).filter(Chat.user_id == user.id).order_by(Chat.updated_at.desc()).all()
+    
+    return [
+        {
+            'id': chat.id,
+            'title': chat.title,
+            'created_at': chat.created_at.isoformat(),
+            'updated_at': chat.updated_at.isoformat(),
+            'message_count': len(chat.messages)
+        }
+        for chat in chats
+    ]
+
+
+@app.post('/api/chats/{chat_id}/message')
+def send_chat_message(
+    chat_id: int,
+    message: str = Form(...),
+    user: User | None = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    if not message or not message.strip():
+        raise HTTPException(status_code=400, detail='Message is required')
+    
+    # Get the chat and verify it belongs to the user
+    chat = db.query(Chat).filter(Chat.id == chat_id, Chat.user_id == user.id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail='Chat not found')
+    
+    # Store user message
+    user_msg = ChatMessage(chat_id=chat.id, role='user', content=message)
+    db.add(user_msg)
+    db.commit()
+    
+    # Get all previous messages for context
+    all_messages = db.query(ChatMessage).filter(ChatMessage.chat_id == chat.id).order_by(ChatMessage.created_at).all()
+    
+    # Build context for AI (all previous messages)
+    context_messages = [{'role': msg.role, 'content': msg.content} for msg in all_messages]
+    
+    try:
+        from ai_client import client, api_key
+        
+        if not api_key:
+            return {'response': 'AI API is not configured. Please set OPENAI_API_KEY.'}
+        
+        response = client.chat.completions.create(
+            model=os.getenv('MODEL', 'gemma3:27b'),
+            messages=context_messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        # Store AI response
+        ai_msg = ChatMessage(chat_id=chat.id, role='assistant', content=ai_response)
+        db.add(ai_msg)
+        
+        # Update chat title if it's still "New Chat" (use first user message as title)
+        if chat.title == 'New Chat':
+            title_preview = message[:50] if len(message) <= 50 else message[:47] + '...'
+            chat.title = title_preview
+        
+        db.commit()
+        
+        return {'response': ai_response}
+    except Exception as e:
+        return {'response': f'Error: {str(e)}'}
+
+
+@app.get('/api/chats/{chat_id}/messages')
+def get_chat_messages(
+    chat_id: int,
+    user: User | None = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    # Get the chat and verify it belongs to the user
+    chat = db.query(Chat).filter(Chat.id == chat_id, Chat.user_id == user.id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail='Chat not found')
+    
+    messages = db.query(ChatMessage).filter(ChatMessage.chat_id == chat.id).order_by(ChatMessage.created_at).all()
+    
+    return [
+        {
+            'id': msg.id,
+            'role': msg.role,
+            'content': msg.content,
+            'created_at': msg.created_at.isoformat()
+        }
+        for msg in messages
+    ]
+
+
+@app.post('/api/chat')
+def chat_api(message: str = Form(...), user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    if not message or not message.strip():
+        raise HTTPException(status_code=400, detail='Message is required')
+    
+    # Get or create a default chat for this user
+    chat = db.query(Chat).filter(Chat.user_id == user.id).order_by(Chat.updated_at.desc()).first()
+    
+    if not chat:
+        chat = Chat(user_id=user.id, title='Chat')
+        db.add(chat)
+        db.commit()
+        db.refresh(chat)
+    
+    # Store user message
+    user_msg = ChatMessage(chat_id=chat.id, role='user', content=message)
+    db.add(user_msg)
+    db.commit()
+    
+    # Get all messages for context
+    all_messages = db.query(ChatMessage).filter(ChatMessage.chat_id == chat.id).order_by(ChatMessage.created_at).all()
+    
+    # Build context for AI
+    context_messages = [{'role': msg.role, 'content': msg.content} for msg in all_messages]
+    
+    try:
+        from ai_client import client, api_key
+        
+        if not api_key:
+            return {'response': 'AI API is not configured. Please set OPENAI_API_KEY.'}
+        
+        response = client.chat.completions.create(
+            model=os.getenv('MODEL', 'gemma3:27b'),
+            messages=context_messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        # Store AI response
+        ai_msg = ChatMessage(chat_id=chat.id, role='assistant', content=ai_response)
+        db.add(ai_msg)
+        db.commit()
+        
+        return {'response': ai_response}
+    except Exception as e:
+        return {'response': f'Error: {str(e)}'}
+
+
+@app.get('/status', response_class=HTMLResponse)
+def status_page(request: Request, user: User | None = Depends(get_current_user)):
+    if not user:
+        return RedirectResponse('/login')
+    return render_template(request, 'status.html', {}, user=user)
+
+
+@app.get('/api/status')
+def api_status():
+    """Return system status information"""
+    try:
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        return {
+            'ok': True,
+            'cpu': {
+                'percent': cpu_percent,
+                'count': psutil.cpu_count()
+            },
+            'memory': {
+                'total': memory.total,
+                'available': memory.available,
+                'percent': memory.percent,
+                'used': memory.used,
+                'free': memory.free
+            },
+            'disk': {
+                'total': disk.total,
+                'used': disk.used,
+                'free': disk.free,
+                'percent': disk.percent
+            },
+            'timestamp': datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {
+            'ok': False,
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }
 
 
 @app.get('/ping')

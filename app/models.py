@@ -32,6 +32,7 @@ class User(Base):
     flashlight_color = Column(String, nullable=False, default='#ffff00')
     flashlight_darkness = Column(Integer, nullable=False, default=80)
     scans = relationship('ScanHistory', back_populates='user', cascade='all, delete-orphan')
+    chats = relationship('Chat', back_populates='user', cascade='all, delete-orphan')
 
 
 class ScanHistory(Base):
@@ -47,6 +48,29 @@ class ScanHistory(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     user = relationship('User', back_populates='scans')
+
+
+class Chat(Base):
+    __tablename__ = 'chats'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    title = Column(String, nullable=False, default='New Chat')
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship('User', back_populates='chats')
+    messages = relationship('ChatMessage', back_populates='chat', cascade='all, delete-orphan')
+
+
+class ChatMessage(Base):
+    __tablename__ = 'chat_messages'
+    id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(Integer, ForeignKey('chats.id'), nullable=False)
+    role = Column(String, nullable=False)  # 'user' or 'assistant'
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    chat = relationship('Chat', back_populates='messages')
 
 
 Base.metadata.create_all(bind=engine)
@@ -92,6 +116,13 @@ def ensure_columns():
                 changed = True
             if changed:
                 conn.commit()
+    
+    # Create chats and chat_messages tables if they don't exist
+    if 'chats' not in table_names:
+        Base.metadata.tables['chats'].create(engine, checkfirst=True)
+    
+    if 'chat_messages' not in table_names:
+        Base.metadata.tables['chat_messages'].create(engine, checkfirst=True)
 
 
 def create_admin_user():

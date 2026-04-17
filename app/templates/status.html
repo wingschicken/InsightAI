@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Status{% endblock %}
+{% block content %}
+<h1>System Status</h1>
+<div class="panel">
+    <p>Real-time system and API health monitoring.</p>
+</div>
+
+<div id="status-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; margin-top:20px;">
+    <!-- CPU Status -->
+    <div class="panel" style="margin-top:0;">
+        <h3 style="margin-top:0;">CPU Usage</h3>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="flex:1;">
+                <div style="font-size:24px; font-weight:bold; color:#58a6ff;" id="cpu-percent">--</div>
+                <div style="font-size:12px; color:#888;">Usage Percentage</div>
+            </div>
+            <svg id="cpu-chart" width="80" height="80" style="margin-left:8px;"></svg>
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:#888;">
+            <div>Cores: <span id="cpu-cores">--</span></div>
+        </div>
+    </div>
+    
+    <!-- Memory Status -->
+    <div class="panel" style="margin-top:0;">
+        <h3 style="margin-top:0;">Memory Usage</h3>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="flex:1;">
+                <div style="font-size:24px; font-weight:bold; color:#58a6ff;" id="mem-percent">--</div>
+                <div style="font-size:12px; color:#888;">Usage Percentage</div>
+            </div>
+            <svg id="mem-chart" width="80" height="80" style="margin-left:8px;"></svg>
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:#888;">
+            <div>Used: <span id="mem-used">--</span></div>
+            <div>Total: <span id="mem-total">--</span></div>
+        </div>
+    </div>
+    
+    <!-- Disk Status -->
+    <div class="panel" style="margin-top:0;">
+        <h3 style="margin-top:0;">Disk Usage</h3>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="flex:1;">
+                <div style="font-size:24px; font-weight:bold; color:#58a6ff;" id="disk-percent">--</div>
+                <div style="font-size:12px; color:#888;">Usage Percentage</div>
+            </div>
+            <svg id="disk-chart" width="80" height="80" style="margin-left:8px;"></svg>
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:#888;">
+            <div>Used: <span id="disk-used">--</span></div>
+            <div>Total: <span id="disk-total">--</span></div>
+        </div>
+    </div>
+    
+    <!-- API Health -->
+    <div class="panel" style="margin-top:0;">
+        <h3 style="margin-top:0;">API Health</h3>
+        <div style="margin:16px 0;">
+            <div style="font-size:14px; font-weight:bold; margin-bottom:8px;">
+                Status: <span id="api-status" style="color:#3fb950;">✓ Healthy</span>
+            </div>
+            <div style="font-size:12px; color:#888;">
+                <div>Last Check: <span id="api-time">--</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel" style="margin-top:20px;">
+    <h3>Performance Metrics</h3>
+    <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; font-size:13px;">
+        <div>
+            <strong>Free Memory:</strong><br>
+            <span id="mem-free" style="color:#888;">--</span>
+        </div>
+        <div>
+            <strong>Free Disk:</strong><br>
+            <span id="disk-free" style="color:#888;">--</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function drawChart(containerId, percent) {
+        const svg = document.getElementById(containerId);
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        const circumference = 2 * Math.PI * 35;
+        
+        circle.setAttribute('cx', '40');
+        circle.setAttribute('cy', '40');
+        circle.setAttribute('r', '35');
+        circle.setAttribute('fill', 'none');
+        circle.setAttribute('stroke', percent > 80 ? '#f85149' : percent > 60 ? '#d29922' : '#3fb950');
+        circle.setAttribute('stroke-width', '6');
+        circle.setAttribute('stroke-dasharray', circumference);
+        circle.setAttribute('stroke-dashoffset', circumference - (percent / 100) * circumference);
+        circle.setAttribute('stroke-linecap', 'round');
+        circle.setAttribute('transform', 'rotate(-90 40 40)');
+        
+        // Background circle
+        const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        bgCircle.setAttribute('cx', '40');
+        bgCircle.setAttribute('cy', '40');
+        bgCircle.setAttribute('r', '35');
+        bgCircle.setAttribute('fill', 'none');
+        bgCircle.setAttribute('stroke', '#30363d');
+        bgCircle.setAttribute('stroke-width', '6');
+        
+        svg.innerHTML = '';
+        svg.appendChild(bgCircle);
+        svg.appendChild(circle);
+        
+        // Add percentage text
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', '40');
+        text.setAttribute('y', '50');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#c9d1d9');
+        text.setAttribute('font-size', '16');
+        text.setAttribute('font-weight', 'bold');
+        text.textContent = Math.round(percent) + '%';
+        svg.appendChild(text);
+    }
+    
+    async function updateStatus() {
+        try {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+            
+            if (data.ok) {
+                // Update CPU
+                document.getElementById('cpu-percent').textContent = Math.round(data.cpu.percent) + '%';
+                document.getElementById('cpu-cores').textContent = data.cpu.count;
+                drawChart('cpu-chart', data.cpu.percent);
+                
+                // Update Memory
+                document.getElementById('mem-percent').textContent = Math.round(data.memory.percent) + '%';
+                document.getElementById('mem-used').textContent = formatBytes(data.memory.used);
+                document.getElementById('mem-total').textContent = formatBytes(data.memory.total);
+                document.getElementById('mem-free').textContent = formatBytes(data.memory.free);
+                drawChart('mem-chart', data.memory.percent);
+                
+                // Update Disk
+                document.getElementById('disk-percent').textContent = Math.round(data.disk.percent) + '%';
+                document.getElementById('disk-used').textContent = formatBytes(data.disk.used);
+                document.getElementById('disk-total').textContent = formatBytes(data.disk.total);
+                document.getElementById('disk-free').textContent = formatBytes(data.disk.free);
+                drawChart('disk-chart', data.disk.percent);
+                
+                // Update API Status
+                document.getElementById('api-status').textContent = '✓ Healthy';
+                document.getElementById('api-status').style.color = '#3fb950';
+                document.getElementById('api-time').textContent = new Date(data.timestamp).toLocaleString();
+            } else {
+                document.getElementById('api-status').textContent = '✗ Error: ' + data.error;
+                document.getElementById('api-status').style.color = '#f85149';
+            }
+        } catch (error) {
+            document.getElementById('api-status').textContent = '✗ Offline';
+            document.getElementById('api-status').style.color = '#f85149';
+            console.error('Error fetching status:', error);
+        }
+    }
+    
+    // Update on page load and every 2 seconds
+    updateStatus();
+    setInterval(updateStatus, 2000);
+</script>
+
+{% endblock %}
