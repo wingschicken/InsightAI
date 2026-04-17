@@ -317,6 +317,9 @@
             return;
         }
 
+        ragIngestBtn.disabled = true;
+        ragIngestBtn.textContent = 'Updating...';
+
         try {
             const response = await fetch('/api/rag/ingest', { method: 'POST' });
             if (!response.ok) {
@@ -324,10 +327,19 @@
                 throw new Error(errorData?.detail || 'RAG ingest failed');
             }
             const data = await response.json();
-            alert('RAG database update completed successfully.');
+            
+            let message = `RAG database updated!\n\n`;
+            message += `Total chunks processed: ${data.total_chunks}\n`;
+            message += `New chunks added: ${data.chunks_added}\n`;
+            message += `Duplicate chunks skipped: ${data.chunks_skipped}`;
+            
+            alert(message);
             console.log('RAG ingest response:', data);
         } catch (error) {
             alert('Failed to update RAG DB: ' + error.message);
+        } finally {
+            ragIngestBtn.disabled = false;
+            ragIngestBtn.textContent = 'Update RAG DB';
         }
     }
 

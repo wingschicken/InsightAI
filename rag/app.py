@@ -38,6 +38,8 @@ collection = client.get_or_create_collection(name=COLLECTION_NAME)
 class IngestResponse(BaseModel):
     status: str
     chunks_added: int
+    chunks_skipped: int
+    total_chunks: int
 
 
 class RetrieveRequest(BaseModel):
@@ -176,9 +178,31 @@ async def ingest_file() -> IngestResponse:
     if not chunks:
         raise HTTPException(status_code=400, detail="Knowledge file is empty")
 
-    embeddings = await embed_texts(chunks)
+    # Get existing documents from collection
+    existing_data = collection.get(include=["documents"])
+    existing_docs = set(existing_data.get("documents", []))
 
-    ids = [str(uuid.uuid4()) for _ in chunks]
+    # Filter out duplicate chunks
+    new_chunks = []
+    for chunk in chunks:
+        if chunk not in existing_docs:
+            new_chunks.append(chunk)
+
+    chunks_skipped = len(chunks) - len(new_chunks)
+
+    # If no new chunks, return early
+    if not new_chunks:
+        return IngestResponse(
+            status="ok",
+            chunks_added=0,
+            chunks_skipped=chunks_skipped,
+            total_chunks=len(chunks)
+        )
+
+    # Embed only new chunks
+    embeddings = await embed_texts(new_chunks)
+
+    ids = [str(uuid.uuid4()) for _ in new_chunks]
     metadatas = [
         {
             "source": str(file_path),
@@ -186,17 +210,22 @@ async def ingest_file() -> IngestResponse:
             "ingested_at": datetime.utcnow().isoformat(),
             "type": "knowledge",
         }
-        for i in range(len(chunks))
+        for i in range(len(new_chunks))
     ]
 
     collection.add(
         ids=ids,
-        documents=chunks,
+        documents=new_chunks,
         embeddings=embeddings,
         metadatas=metadatas,
     )
 
-    return IngestResponse(status="ok", chunks_added=len(chunks))
+    return IngestResponse(
+        status="ok",
+        chunks_added=len(new_chunks),
+        chunks_skipped=chunks_skipped,
+        total_chunks=len(chunks)
+    )
 
 
 @app.post("/retrieve", response_model=RetrieveResponse)
