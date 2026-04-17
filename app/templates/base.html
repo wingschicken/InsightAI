@@ -138,16 +138,36 @@
             body.style.setProperty('--flashlight-darkness', `rgba(0, 0, 0, ${darkness / 100})`);
             {% endif %}
 
-            function updateMousePosition(e) {
-                if (body.classList.contains('flashlight-enabled')) {
-                    const x = (e.clientX / window.innerWidth) * 100;
-                    const y = (e.clientY / window.innerHeight) * 100;
-                    body.style.setProperty('--mouse-x', x + '%');
-                    body.style.setProperty('--mouse-y', y + '%');
+            function updatePointerPosition(e) {
+                if (!body.classList.contains('flashlight-enabled')) {
+                    return;
                 }
+
+                let clientX = e.clientX;
+                let clientY = e.clientY;
+
+                if (e.touches && e.touches.length) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else if (e.changedTouches && e.changedTouches.length) {
+                    clientX = e.changedTouches[0].clientX;
+                    clientY = e.changedTouches[0].clientY;
+                }
+
+                if (typeof clientX !== 'number' || typeof clientY !== 'number') {
+                    return;
+                }
+
+                const x = (clientX / window.innerWidth) * 100;
+                const y = (clientY / window.innerHeight) * 100;
+                body.style.setProperty('--mouse-x', x + '%');
+                body.style.setProperty('--mouse-y', y + '%');
             }
 
-            document.addEventListener('mousemove', updateMousePosition);
+            document.addEventListener('mousemove', updatePointerPosition);
+            document.addEventListener('pointermove', updatePointerPosition);
+            document.addEventListener('touchmove', updatePointerPosition, { passive: true });
+            document.addEventListener('touchstart', updatePointerPosition, { passive: true });
         });
     </script>
 </head>
