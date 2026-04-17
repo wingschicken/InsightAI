@@ -17,6 +17,7 @@
             <option value="full" {% if profile == 'full' %}selected{% endif %}>Full</option>
             <option value="nonadmin" {% if profile == 'nonadmin' %}selected{% endif %}>Non-Admin</option>
         </select>
+        <p style="font-size:13px; color:#888; margin-top:8px;">All profiles use non-admin-safe Nmap options when possible.</p>
 
         <div class="checkbox-group">
             <label><input type="checkbox" name="web_scan" {% if web_scan %}checked{% endif %}> Web scan checks</label>

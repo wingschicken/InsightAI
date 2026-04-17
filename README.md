@@ -1,16 +1,17 @@
 # InsightAI
 
-InsightAI is a web-based security scanning platform built with FastAPI, Nmap, and AI-assisted analysis. The app supports authenticated users running network scans, optional web checks, OWASP mapping, and AI-powered risk summaries.
+InsightAI is a secure vulnerability scanning web app built with FastAPI, Nmap, and AI-driven tooling. It combines safe non-admin scan profiles, web discovery, OWASP-style mapping, AI analysis, RAG-backed chat, and health monitoring.
 
 ## Features
 
-- **Nmap-based network scanning** with multiple profiles
-- **Web security checks** for discovered web targets
-- **OWASP vulnerability mapping** for findings
-- **AI-driven risk analysis** using OpenAI-compatible APIs
-- **User authentication** and profile management
-- **Persistent scan history** with duration and risk metadata
-- **Modern responsive UI** with dark/light theme support
+- **Safe Nmap scanning** using non-admin-friendly profiles
+- **Web security checks** for discovered HTTP(S) targets
+- **OWASP-style findings mapping**
+- **AI-powered scan summaries and recommendations**
+- **Persistent scan history for authenticated users**
+- **Chat interface with optional RAG mode**
+- **System and RAG status visibility**
+- **Dark/light themes and responsive UI**
 
 ## Technology
 
@@ -20,8 +21,8 @@ InsightAI is a web-based security scanning platform built with FastAPI, Nmap, an
 - SQLite + SQLAlchemy
 - Nmap
 - OpenAI-compatible API integration
+- ChromaDB-backed RAG service
 - Docker + Docker Compose
-- Python 3.12
 
 ## Quick Start
 
@@ -31,35 +32,15 @@ InsightAI is a web-based security scanning platform built with FastAPI, Nmap, an
 - Docker Compose
 - A modern browser
 
-### Setup
-
-1. Clone the repository:
+### Run with Docker
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/wingschicken/InsightAI.git
 cd InsightAI
-```
-
-2. Create or update `.env`:
-
-```bash
-PORT=8000
-OPENAI_API_KEY=your-api-key
-OPENAI_BASE_URL=https://api.openai.com/v1
-MODEL=gemma3:27b
-```
-
-3. Start the app:
-
-```bash
 docker compose -f compose.yml up --build
 ```
 
-4. Open InsightAI in your browser:
-
-- `http://localhost:8000`
-
-If `PORT` is changed in `.env`, the app will use that value and fall back to `8000` when unset.
+Open the app at `http://localhost:8000`.
 
 ### Stop the app
 
@@ -69,33 +50,42 @@ docker compose -f compose.yml down
 
 ## Configuration
 
+Create a `.env` file with the following values:
+
+```bash
+PORT=8000
+OPENAI_API_KEY=your-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+MODEL=gemma3:27b
+```
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PORT` | HTTP port for the app | `8000` |
-| `OPENAI_API_KEY` | AI API key | Required |
+| `OPENAI_API_KEY` | AI API key for assistant and RAG | Required |
 | `OPENAI_BASE_URL` | OpenAI-compatible base URL | `https://api.openai.com/v1` |
 | `MODEL` | AI model identifier | `gemma3:27b` |
-| `AI_TOKEN` | Alternate API key env var | - |
-| `AI_URL` | Alternate API URL env var | - |
 
 ## Scan Profiles
 
+All supported scan profiles use non-admin-safe Nmap options when possible:
+
 - `fast_recon` — fast reconnaissance
-- `basic` — standard port scan
+- `basic` — standard port and service scan
 - `top_ports` — top ports scan
-- `service` — service detection with version info
-- `full` — broader comprehensive scan
+- `service` — service detection
+- `full` — full port scan
+- `nonadmin` — safest TCP connect scan
 
-## User Experience
+## Chat and RAG
 
-InsightAI users can:
+InsightAI includes an AI chat interface with an optional RAG mode. When RAG mode is enabled, messages are forwarded to the RAG backend with a payload like:
 
-- run scans from `/scan`
-- choose profile, web checks, and AI analysis
-- view collapsible scan results
-- see AI risk level and recommendations
-- store history and review past scans
-- update profile settings and default scan behavior
+```json
+{ "query": "your question", "top_k": 4 }
+```
+
+This enables responses grounded in ingested knowledge.
 
 ## API Reference
 
@@ -139,6 +129,12 @@ Response includes:
 - `owasp_mapping`
 - `ai_analysis`
 
+## RAG Endpoints
+
+- `POST /api/rag/ingest` — update the RAG knowledge database
+- `POST /api/rag_chat/{chat_id}` — send a chat prompt through RAG and persist the result
+- RAG backend direct endpoints: `GET /ping`, `POST /ingest-file`, `POST /chat`
+
 ## Web Routes
 
 | Route | Method | Purpose |
@@ -151,6 +147,8 @@ Response includes:
 | `/profile` | GET, POST | Update preferences |
 | `/history` | GET | View scan history |
 | `/history/{scan_id}` | GET | Scan detail page |
+| `/chat` | GET | AI chat and RAG interface |
+| `/status` | GET | Health dashboard |
 | `/about` | GET | About page |
 
 ## Project Structure

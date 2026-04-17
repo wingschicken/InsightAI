@@ -16,16 +16,44 @@ SUSPICIOUS_BANNER_KEYWORDS = ['apache', 'nginx', 'iis', 'cloudflare', 'werkzeug'
 def discover_web_targets(target: str, nmap_result: dict) -> list:
     parsed = urlparse(target)
     hosts = []
+    
+    # If target already has scheme, use it directly
     if parsed.scheme and parsed.netloc:
         hosts.append(f'{parsed.scheme}://{parsed.netloc}')
-    else:
-        host = parsed.netloc or parsed.path
-        if any(s['service'] == 'http' or s['port'] == 80 for s in nmap_result.get('services', [])):
-            hosts.append(f'http://{host}')
-        if any(s['service'] == 'https' or s['port'] == 443 for s in nmap_result.get('services', [])):
-            hosts.append(f'https://{host}')
-        if not hosts:
-            hosts.append(f'http://{host}')
+        return hosts
+    
+    # Extract base host
+    host = parsed.netloc or parsed.path
+    
+    # Check for common web ports in the nmap results
+    open_ports = nmap_result.get('open_ports', [])
+    services = nmap_result.get('services', [])
+    
+    # Build a map of port -> service name
+    port_to_service = {s['port']: s['service'].lower() for s in services}
+    
+    # Check for HTTP/HTTPS on common ports
+    common_web_ports = {
+        80: 'http',
+        443: 'https',
+        8080: 'http',
+        8443: 'https',
+        8000: 'http',
+        8888: 'http',
+        3000: 'http',
+        5000: 'http',
+    }
+    
+    for port, default_scheme in common_web_ports.items():
+        if port in open_ports:
+            service_name = port_to_service.get(port, default_scheme)
+            # Determine scheme based on service name or port
+            if 'https' in service_name or 'ssl' in service_name or port == 443 or port == 8443:
+                hosts.append(f'https://{host}:{port}' if port not in [443] else f'https://{host}')
+            else:
+                hosts.append(f'http://{host}:{port}' if port not in [80] else f'http://{host}')
+    
+    # If no web services found, don't default to anything
     return hosts
 
 

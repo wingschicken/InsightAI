@@ -1,10 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<h1>Welcome to the Security Scanner</h1>
+<h1>Welcome to InsightAI</h1>
 <div class="panel">
-    <p>Use this web interface to run Nmap network scans, perform web security checks, and get AI-powered analysis.</p>
-    <p>Open your profile to edit your display name, email, avatar link, and theme preferences.</p>
-    <p><a href="/scan">Go to the scanner</a></p>
+    <p>InsightAI bundles safe, non-admin Nmap scanning with web discovery, OWASP mapping, AI analysis, and RAG-powered chat — all from one dashboard.</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:20px;">
+        <div class="panel" style="padding:18px;">
+            <h2>Scan</h2>
+            <p>Run safe network probes with non-admin profiles and optional web checks.</p>
+            <p><a href="/scan">Launch scanner</a></p>
+        </div>
+        <div class="panel" style="padding:18px;">
+            <h2>Chat</h2>
+            <p>Ask questions and switch to RAG mode for context-aware responses from your knowledge base.</p>
+            <p><a href="/chat">Open chat</a></p>
+        </div>
+        <div class="panel" style="padding:18px;">
+            <h2>Status</h2>
+            <p>Monitor app health, system metrics, and RAG availability.</p>
+            <p><a href="/status">View status</a></p>
+        </div>
+    </div>
+    <div style="margin-top:20px; font-size:14px; color:#888;">
+        <p>Project GitHub: <a href="https://github.com/wingschicken/InsightAI.git" target="_blank">https://github.com/wingschicken/InsightAI.git</a></p>
+    </div>
 </div>
 {% endblock %}

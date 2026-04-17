@@ -19,7 +19,7 @@ from ai_client import analyze_scan_result
 app = FastAPI()
 templates = Jinja2Templates(directory='templates')
 
-PROFILE_OPTIONS = ['nonadmin']
+PROFILE_OPTIONS = ['fast_recon', 'basic', 'top_ports', 'service', 'full', 'nonadmin']
 
 
 def get_db():
@@ -568,6 +568,16 @@ def api_status():
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
         
+        rag_status = {'ok': False, 'message': 'RAG service unreachable'}
+        try:
+            rag_response = requests.get('http://rag:8001/ping', timeout=5)
+            if rag_response.ok:
+                rag_status = {'ok': True, 'message': 'RAG service reachable'}
+            else:
+                rag_status = {'ok': False, 'message': f'Unexpected response: {rag_response.status_code}'}
+        except Exception as rag_exc:
+            rag_status = {'ok': False, 'message': str(rag_exc)}
+
         return {
             'ok': True,
             'cpu': {
@@ -587,6 +597,7 @@ def api_status():
                 'free': disk.free,
                 'percent': disk.percent
             },
+            'rag': rag_status,
             'timestamp': datetime.utcnow().isoformat()
         }
     except Exception as e:

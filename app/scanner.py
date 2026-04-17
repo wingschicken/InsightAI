@@ -3,12 +3,12 @@ import xml.etree.ElementTree as ET
 from urllib.parse import urlparse
 
 PROFILE_ARGS = {
-    'fast_recon': ['-F'],
-    'basic': ['-sV'],
-    'top_ports': ['--top-ports', '100', '-sV'],
-    'service': ['-sV'],
-    'full': ['-sV', '-p-'],
-    'nonadmin': ["-sT"]
+    'fast_recon': ['-sT', '-F'],
+    'basic': ['-sT', '-sV'],
+    'top_ports': ['-sT', '--top-ports', '100', '-sV'],
+    'service': ['-sT', '-sV'],
+    'full': ['-sT', '-sV', '-p-'],
+    'nonadmin': ['-sT']
 }
 
 DEFAULT_NMAP_OPTIONS = ['-oX', '-', '-Pn', '-T3', '--max-retries', '1', '--host-timeout', '30s', '--min-parallelism', '10']
@@ -23,7 +23,7 @@ def normalize_target(target: str) -> str:
 
 def run_nmap(target: str, profile: str) -> dict:
     host = normalize_target(target)
-    args = ['nmap'] + DEFAULT_NMAP_OPTIONS + PROFILE_ARGS.get(profile, PROFILE_ARGS['basic']) + [host]
+    args = ['nmap'] + DEFAULT_NMAP_OPTIONS + PROFILE_ARGS.get(profile, PROFILE_ARGS['nonadmin']) + [host]
     try:
         completed = subprocess.run(args, capture_output=True, text=True, timeout=240)
         if completed.returncode != 0:

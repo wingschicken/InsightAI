@@ -1,22 +1,40 @@
 {% extends "base.html" %}
 {% block title %}About{% endblock %}
 {% block content %}
-<h1>About the Security Scanner</h1>
+<h1>About InsightAI</h1>
 <div class="panel">
-    <p>This container runs a single FastAPI application that performs Nmap network scanning, web header checks, OWASP-style mapping, and AI-powered result analysis.</p>
-    <p>Scans inside Docker may be slower than on your host PC because Docker networking and the container runtime add a bit of overhead. The app uses safer, faster Nmap settings by default to keep scans practical inside the container.</p>
+    <p>InsightAI is a FastAPI-based security scanning web app with non-admin-safe Nmap profiles, optional web security discovery, AI-powered analysis, chat with RAG support, and operational status monitoring.</p>
+    <p>The system keeps scanning safe for unprivileged containers by using TCP connect-style Nmap scans rather than raw packet scans. It also provides a separate RAG backend to ingest knowledge and answer context-aware security questions.</p>
 </div>
 <div class="panel">
-    <h2>How the API works</h2>
-    <p>Use the endpoints below for automated access.</p>
-    <pre>GET /ping
-POST /api/scan</pre>
-    <p>The scan endpoint expects JSON like:</p>
+    <h2>Available APIs</h2>
+    <p>Use these endpoints to interact with InsightAI programmatically:</p>
+    <ul>
+        <li><strong>GET /ping</strong> — health check for the web app.</li>
+        <li><strong>GET /api/status</strong> — system health including CPU, memory, disk, and RAG service reachability.</li>
+        <li><strong>POST /api/scan</strong> — run a scan.</li>
+        <li><strong>POST /api/rag/ingest</strong> — trigger the RAG service to ingest its knowledge file.</li>
+        <li><strong>POST /api/rag_chat/{chat_id}</strong> — send a chat message via RAG and save the conversation.</li>
+    </ul>
+    <p>Example scan request:</p>
     <pre>{
-  "target": "example.com",
+  "target": "scanme.nmap.org",
   "profile": "basic",
   "web_scan": true
 }</pre>
-    <p>And returns structured JSON with network findings, web checks, OWASP mapping, and AI analysis.</p>
+    <p>Example RAG ingest call:</p>
+    <pre>POST /api/rag/ingest</pre>
+</div>
+<div class="panel">
+    <h2>Profiles</h2>
+    <p>All supported scan profiles use safe, non-admin Nmap options:</p>
+    <ul>
+        <li>fast_recon</li>
+        <li>basic</li>
+        <li>top_ports</li>
+        <li>service</li>
+        <li>full</li>
+        <li>nonadmin</li>
+    </ul>
 </div>
 {% endblock %}

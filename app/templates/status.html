@@ -66,6 +66,19 @@
             </div>
         </div>
     </div>
+
+    <!-- RAG Status -->
+    <div class="panel" style="margin-top:0;">
+        <h3 style="margin-top:0;">RAG Service</h3>
+        <div style="margin:16px 0;">
+            <div style="font-size:14px; font-weight:bold; margin-bottom:8px;">
+                Status: <span id="rag-status" style="color:#3fb950;">✓ Checking...</span>
+            </div>
+            <div style="font-size:12px; color:#888;">
+                <div>Note: checks RAG service reachability at `/ping`.</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="panel" style="margin-top:20px;">
@@ -161,6 +174,10 @@
                 document.getElementById('api-status').textContent = '✓ Healthy';
                 document.getElementById('api-status').style.color = '#3fb950';
                 document.getElementById('api-time').textContent = new Date(data.timestamp).toLocaleString();
+
+                // Update RAG Status
+                document.getElementById('rag-status').textContent = data.rag?.ok ? '✓ Healthy' : '✗ ' + (data.rag?.message || 'Unavailable');
+                document.getElementById('rag-status').style.color = data.rag?.ok ? '#3fb950' : '#f85149';
             } else {
                 document.getElementById('api-status').textContent = '✗ Error: ' + data.error;
                 document.getElementById('api-status').style.color = '#f85149';
