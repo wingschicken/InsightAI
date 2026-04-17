@@ -1,14 +1,11 @@
-FROM python:3.11-slim
+FROM python:3.11
 
 WORKDIR /app
 
-RUN mkdir -p /data
+RUN pip install fastapi uvicorn requests qdrant-client sentence-transformers
 
-COPY datamy.json /app/datamy.json
-COPY requirements.txt /app/requirements.txt
+COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt
+VOLUME ["/data"]
 
-COPY main.py /app/main.py
-
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
