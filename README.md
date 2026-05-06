@@ -4,6 +4,9 @@ InsightAI is a secure vulnerability scanning web application built with FastAPI,
 
 The platform demonstrates how AI can process and interpret security tool outputs to produce structured, actionable insights. Additionally, the RAG system showcases how curated knowledge—such as vulnerability examples—can be incorporated as contextual input to improve analysis quality and relevance.
 
+Note:
+This project is intended for demonstration purposes only. In a real-world security environment, a more comprehensive toolkit would be required, incorporating multiple specialized scanning and analysis tools beyond Nmap to achieve broader coverage and deeper insight.
+
 ## Features
 
 - **Safe Nmap scanning** using non-admin-friendly profiles
