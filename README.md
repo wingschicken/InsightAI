@@ -48,8 +48,8 @@ docker compose -f compose.yml up --build
 Open the app at `http://localhost:8000`.
 
 Default credentials:
-Username: admin
-Password: nimda123
+- Username: `admin`
+- Password: `nimda123`
 
 ### Stop the app
 
